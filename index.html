@@ -7,6 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const API_BASE = "https://p2p-lending-production-f591.up.railway.app";
+</script>
 <style>
 /* ═══════════════════════════════════════
    DESIGN SYSTEM — LendRoom Fintech
@@ -1720,37 +1723,35 @@ function showToast(msg, type='info') {
 }
 
 // ── RENDER ROOMS ──────────────────────────────────
-function renderRooms() {
-  const grid = document.getElementById('roomGrid');
-  grid.innerHTML = ROOMS.map(r => `
-    <div class="room-card" onclick="showView('roomdetail')">
-      <div class="room-card-header">
-        <div class="room-icon" style="font-size:22px;">${r.emoji}</div>
-        <span class="room-status ${r.status === 'active' ? 'status-active' : 'status-pending'}">
-          ${r.status === 'active' ? '● Active' : '◎ Pending'}
-        </span>
-      </div>
-      <div class="room-name">${r.name}</div>
-      <div class="room-desc">${r.desc}</div>
-      <div class="room-stats">
-        <div class="room-stat"><div class="room-stat-label">Interest</div><div class="room-stat-value">${r.rate}%</div></div>
-        <div class="room-stat"><div class="room-stat-label">Pool Size</div><div class="room-stat-value">${r.pool}</div></div>
-        <div class="room-stat"><div class="room-stat-label">My Stake</div><div class="room-stat-value" style="color:var(--accent-green);">${r.myAmount}</div></div>
-        <div class="room-stat"><div class="room-stat-label">Risk</div><div class="room-stat-value" style="color:${r.risk==='low'?'var(--accent-green)':r.risk==='high'?'var(--accent-red)':'var(--accent-amber)'};">${r.risk.charAt(0).toUpperCase()+r.risk.slice(1)}</div></div>
-      </div>
-      <div class="room-footer">
-        <div class="room-members">
-          <div class="member-avatars">
-            ${['A','B','C'].map(l=>`<div class="m-avatar">${l}</div>`).join('')}
-          </div>
-          <span style="margin-left:8px;">${r.members} members</span>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openModal('lendModal')">+ Join</button>
-      </div>
-    </div>
-  `).join('');
-}
+async function renderRooms() {
+  try {
+    // 1. Fetch real rooms from your Railway backend
+    const response = await fetch(API_BASE + '/api/rooms');
+    const rooms = await response.json();
 
+    const grid = document.getElementById('roomGrid');
+    grid.innerHTML = rooms.map(r => `
+      <div class="room-card" onclick="showView('roomdetail')">
+        <div class="room-card-header">
+          <div class="room-icon" style="font-size:22px;">${r.cover_emoji || '🏦'}</div>
+          <span class="room-status status-active">● Active</span>
+        </div>
+        <div class="room-name">${r.name}</div>
+        <div class="room-desc">${r.description}</div>
+        <div class="room-stats">
+          <div class="room-stat"><div class="room-stat-label">Interest</div><div class="room-stat-value">${r.interest_rate}%</div></div>
+          <div class="room-stat"><div class="room-stat-label">Pool Size</div><div class="room-stat-value">₹${r.pool_balance || '0'}</div></div>
+          <div class="room-stat"><div class="room-stat-label">Risk</div><div class="room-stat-value" style="color:var(--accent-amber);">${r.risk_level}</div></div>
+        </div>
+        <div class="room-footer">
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openModal('lendModal')">+ Join</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error("Error loading rooms:", error);
+  }
+}
 // ── RENDER ACTIVITY ───────────────────────────────
 function renderActivity() {
   const feed = document.getElementById('activityFeed');
